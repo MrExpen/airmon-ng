@@ -1,0 +1,73 @@
+#! /usr/bin/python3
+from sys import argv
+from os import system
+
+interface = ''
+
+def mon_check():
+    realmonitor = False;
+    system("iwconfig " + interface + " > /tmp/1.txt")
+    fin = open("/tmp/1.txt")
+    a = fin.read().split()
+    fin.close()
+    system("sudo rm /tmp/1.txt")
+    for i in a:
+        if i[:5] == "Mode:":
+            if i[5:] == "Monitor":
+                realmonitor = True
+    return realmonitor
+
+def main():
+    global interface
+    mode = ''
+    if len(argv) == 1:
+        system("sudo airmon-ng")
+        return 0
+    elif len(argv) == 2:
+        mode = argv[1]
+    elif len(argv) == 3:
+        mode = argv[1]
+        interface = argv[2]
+    else:
+        print("wrong arg")
+        return 228
+
+    if mode == "check":
+        system("sudo airmon-ng check " + interface)
+        return 0
+
+
+    monitor = False;
+    if interface[-3:] == "mon":
+        monitor = True
+    mon = mon_check()
+
+
+    if mode == "start":
+        if not monitor and not mon:
+            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type monitor && sudo ip link set " + interface + " name " + interface + "mon && sudo ip link set " + interface + "mon up")
+            interface += "mon"
+        elif monitor and not mon:
+            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type monitor && sudo ip link set " + interface + " up")
+        elif not monitor and monitor:
+            system("sudo ip link set " + interface + " down && sudo ip link set " + interface + " name " + interface + "mon && sudo ip link set " + interface + "mon up")
+            interface += "mon"
+        if not mon_check():
+            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type managed && sudo ip link set " + interface + " name " + interface[:-3] + " && sudo ip link set " + interface[:-3] + " up")
+            print("denied, renaming interface")
+            return 1
+        return 0
+    elif mode == "stop":
+        if monitor and mon:
+            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type managed && sudo ip link set " + interface + " name " + interface[:-3] + " && sudo ip link set " + interface[:-3] + " up")
+        elif monitor and not mon:
+            system("sudo ip link set " + interface + " down && sudo ip link set " + interface + " name " + interface[:-3] + " && sudo ip link set " + interface[:-3] + " up")
+        elif not monitor and monitor:
+            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type managed && sudo ip link set " + interface[:-3] + " up")
+        else:
+            return 2;
+        return 0
+
+if __name__ == '__main__':
+        main()
+
