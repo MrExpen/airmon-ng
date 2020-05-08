@@ -1,27 +1,25 @@
 #! /usr/bin/python3
 from sys import argv
-from os import system
+import subprocess
 
 interface = ''
 
+
 def mon_check():
-    realmonitor = False;
-    system("iwconfig " + interface + " > /tmp/1.txt")
-    fin = open("/tmp/1.txt")
-    a = fin.read().split()
-    fin.close()
-    system("sudo rm /tmp/1.txt")
+    realmonitor = False
+    a = subprocess.run(['iwconfig', interface], capture_output=True, check=True, text=True).stdout.split()
     for i in a:
-        if i[:5] == "Mode:":
-            if i[5:] == "Monitor":
+        if i[:5] == 'Mode:':
+            if i[5:] == 'Monitor':
                 realmonitor = True
     return realmonitor
 
+
 def main():
     global interface
-    mode = ''
+    mode = None
     if len(argv) == 1:
-        system("sudo airmon-ng")
+        subprocess.run(['airmon-ng'])
         return 0
     elif len(argv) == 2:
         mode = argv[1]
@@ -33,41 +31,59 @@ def main():
         return 228
 
     if mode == "check":
-        system("sudo airmon-ng check " + interface)
+        subprocess.run(['airmon-ng', mode, interface])
         return 0
 
-
-    monitor = False;
+    monitor = False
     if interface[-3:] == "mon":
         monitor = True
     mon = mon_check()
 
-
     if mode == "start":
         if not monitor and not mon:
-            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type monitor && sudo ip link set " + interface + " name " + interface + "mon && sudo ip link set " + interface + "mon up")
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['iw', 'dev', interface, 'set', 'type', 'monitor'])
+            subprocess.run(['ip', 'link', 'set', interface, 'name', interface + 'mon'])
             interface += "mon"
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
         elif monitor and not mon:
-            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type monitor && sudo ip link set " + interface + " up")
-        elif not monitor and monitor:
-            system("sudo ip link set " + interface + " down && sudo ip link set " + interface + " name " + interface + "mon && sudo ip link set " + interface + "mon up")
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['iw', 'dev', interface, 'set', 'type', 'monitor'])
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
+        elif not monitor and mon:
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['ip', 'link', 'set', interface, 'name', interface + 'mon'])
             interface += "mon"
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
         if not mon_check():
-            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type managed && sudo ip link set " + interface + " name " + interface[:-3] + " && sudo ip link set " + interface[:-3] + " up")
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['iw', 'dev', interface, 'set', 'type', 'managed'])
+            subprocess.run(['ip', 'link', 'set', interface, 'name', interface[:-3]])
+            interface = interface[:-3]
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
             print("denied, renaming interface")
             return 1
         return 0
     elif mode == "stop":
         if monitor and mon:
-            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type managed && sudo ip link set " + interface + " name " + interface[:-3] + " && sudo ip link set " + interface[:-3] + " up")
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['iw', 'dev', interface, 'set', 'type', 'managed'])
+            subprocess.run(['ip', 'link', 'set', interface, 'name', interface[:-3]])
+            interface = interface[:-3]
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
         elif monitor and not mon:
-            system("sudo ip link set " + interface + " down && sudo ip link set " + interface + " name " + interface[:-3] + " && sudo ip link set " + interface[:-3] + " up")
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['ip', 'link', 'set', interface, 'name', interface[:-3]])
+            interface += interface[:-3]
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
         elif not monitor and monitor:
-            system("sudo ip link set " + interface + " down && sudo iw dev " + interface + " set type managed && sudo ip link set " + interface[:-3] + " up")
+            subprocess.run(['ip', 'link', 'set', interface, 'down'])
+            subprocess.run(['iw', 'dev', interface, 'set', 'type', 'managed'])
+            subprocess.run(['ip', 'link', 'set', interface, 'up'])
         else:
-            return 2;
+            return 2
         return 0
 
-if __name__ == '__main__':
-        main()
 
+if __name__ == '__main__':
+    main()
