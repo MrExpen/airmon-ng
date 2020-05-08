@@ -16,6 +16,10 @@ def mon_check():
 
 
 def main():
+    if subprocess.run(['whoami'], capture_output=True, text=True).stdout != 'root':
+        print('Run it as root!')
+        return 1
+
     global interface
     mode = None
     if len(argv) == 1:
