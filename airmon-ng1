@@ -17,7 +17,7 @@ def mon_check():
 
 def main():
     print(subprocess.run(['whoami'], capture_output=True, text=True).stdout)
-    if subprocess.run(['whoami'], capture_output=True, text=True).stdout != 'root':
+    if subprocess.run(['whoami'], capture_output=True, text=True).stdout != 'root\n':
         print('Run it as root!')
         return 1
 
